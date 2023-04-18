@@ -10,6 +10,7 @@ main() {
         test_app "fastify-webhook"
         test_app "spring-boot-webhook"
         test_app "go-webhook"
+        test_app "python-flask-webhook"
     else
         test_app "$1"
     fi
