@@ -6,7 +6,7 @@ const port = process.env.PORT || 8000;
 const webhookB64Key = process.env.WEBHOOK_B64KEY;
 const maxAgeSeconds = process.env.MAX_REQUEST_AGE_SECONDS || 300;
 
-const verifyWebhookSignature = function (signatures, timestamp, payload, base64Key) {
+const verifyWebhookSignature = function (signatures, timestamp, payload, base64Key, maxAgeSeconds) {
   const ageSeconds = (new Date().getTime() - Date.parse(timestamp)) / 1000;
   if (ageSeconds > maxAgeSeconds) {
     return false;
