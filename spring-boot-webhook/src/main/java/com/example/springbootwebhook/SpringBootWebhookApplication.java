@@ -2,6 +2,7 @@ package com.example.springbootwebhook;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.OffsetDateTime;
 import java.util.Base64;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -25,6 +26,9 @@ public class SpringBootWebhookApplication {
   @Value("${WEBHOOK_B64KEY}")
   private String base64Key;
 
+  @Value("${MAX_REQUEST_AGE_SECONDS:500}")
+  private long maxAgeSeconds;
+
   @RequestMapping(
       value = "/",
       method = RequestMethod.POST,
@@ -35,15 +39,19 @@ public class SpringBootWebhookApplication {
       @RequestHeader(value = "webhook-request-timestamp") String timestamp) {
 
     if (!SpringBootWebhookApplication.signatureIsValid(
-        signatures, timestamp, body, this.base64Key)) {
+        signatures, timestamp, body, this.base64Key, this.maxAgeSeconds)) {
       return new ResponseEntity(HttpStatus.UNAUTHORIZED);
     }
     return new ResponseEntity(HttpStatus.OK);
   }
 
   public static boolean signatureIsValid(
-      String sigHeader, String tsHeader, String payload, String base64Key) {
+      String sigHeader, String tsHeader, String payload, String base64Key, long maxAgeSeconds) {
     try {
+      OffsetDateTime t = OffsetDateTime.parse(tsHeader);
+      if (t.plusSeconds(maxAgeSeconds).isBefore(OffsetDateTime.now())) {
+        return false;
+      }
       byte[] key = Base64.getDecoder().decode(base64Key);
       Mac mac = Mac.getInstance("HmacSHA256");
       mac.init(new SecretKeySpec(key, "HmacSHA256"));

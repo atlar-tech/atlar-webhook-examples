@@ -1,14 +1,14 @@
 import express from "express";
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 
 const port = process.env.PORT || 8000;
 const webhookB64Key = process.env.WEBHOOK_B64KEY;
+const maxAgeSeconds = process.env.MAX_REQUEST_AGE_SECONDS || 300;
 
-const verifyWebhookSignature = function (signatures, timestamp, payload, base64Key) {
+const verifyWebhookSignature = function (signatures, timestamp, payload, base64Key, maxAgeSeconds) {
   const ageSeconds = (new Date().getTime() - Date.parse(timestamp)) / 1000;
-  const ageHours = ageSeconds / 60 / 60;
-  if (ageHours > 1) {
-    console.error("Warning: Webhook request timestamp is older than expected", ageHours);
+  if (ageSeconds > maxAgeSeconds) {
+    return false;
   }
   const key = Buffer.from(base64Key, "base64");
   const calculatedSignature = createHmac("sha256", key).update(`${payload}.${timestamp}`).digest();
@@ -35,13 +35,13 @@ app.use(
 );
 
 app.post("/", (request, response) => {
-  if (!request.get("webhook-signature") || !request.get("webhook-request-timestamp")) {
+  const signature = request.headers["webhook-signature"];
+  const timestamp = request.headers["webhook-request-timestamp"];
+  if (!signature || !timestamp) {
     response.status(400).send();
     return;
   }
-  const signatures = request.headers["webhook-signature"];
-  const timestamp = request.headers["webhook-request-timestamp"];
-  if (!verifyWebhookSignature(signatures, timestamp, request.rawBody, webhookB64Key)) {
+  if (!verifyWebhookSignature(signature, timestamp, request.rawBody, webhookB64Key, maxAgeSeconds)) {
     response.status(401).send();
     return;
   }
