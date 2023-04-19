@@ -20,14 +20,14 @@ main() {
 test_app() {
     local appname=$1
     echo "Testing $appname"
-    docker build -t "$appname" "$appname"
+    docker build -q -t "$appname" "$appname" >/dev/null
     docker run -d \
         -p "${PORT}:${PORT}" \
         -e "PORT" \
         -e "WEBHOOK_B64KEY" \
         -e "MAX_REQUEST_AGE_SECONDS" \
         --name "$appname" \
-        "$appname"
+        "$appname" >/dev/null
 
     sleep 3
 
@@ -36,73 +36,67 @@ test_app() {
     sig1='267bbfaf0036e3a4f1dec8018679c9123b4142aa972bdc68116ad30b3bc28eae'
     failure=false
 
-    if ! curl_expect "200" \
+    if ! curl_expect "Validate signature" "200" \
         -H 'content-type: application/json' \
         -H "webhook-request-timestamp: $ts1" \
         -H "webhook-signature: $sig1" \
         -d "$data1"; then
-        echo "Failed test: validate signature"
         failure=true
     fi
 
-    if ! curl_expect "200" \
+    if ! curl_expect "Multiple signatures, second is valid" "200" \
         -H 'content-type: application/json' \
         -H "webhook-request-timestamp: $ts1" \
         -H "webhook-signature: invalidsignature,$sig1" \
         -d "$data1"; then
-        echo "Failed test: multiple signatures, second is valid"
         failure=true
     fi
 
-    if ! curl_expect "200" \
+    if ! curl_expect "Multiple signatures, first is valid" "200" \
         -H 'content-type: application/json' \
         -H "webhook-request-timestamp: $ts1" \
         -H "webhook-signature: $sig1,invalidsignature" \
         -d "$data1"; then
-        echo "Failed test: multiple signatures, first is valid"
         failure=true
     fi
 
-    if ! curl_expect "400" \
+    if ! curl_expect "Signature header is missing" "400" \
         -H 'content-type: application/json' \
         -H "webhook-request-timestamp: $ts1" \
         -d "$data1"; then
-        echo "Failed test: signature header is missing"
         failure=true
     fi
 
-    if ! curl_expect "400" \
+    if ! curl_expect "Timestamp header is missing" "400" \
         -H 'content-type: application/json' \
         -H "webhook-signature: $sig1" \
         -d "$data1"; then
-        echo "Failed test: timestamp header is missing"
         failure=true
     fi
 
-    if ! curl_expect "400" \
+    if ! curl_expect "Both headers are missing" "400" \
         -H 'content-type: application/json' \
         -d "$data1"; then
-        echo "Failed test: webhook headers are missing"
         failure=true
     fi
 
-    if ! curl_expect "401" \
+    if ! curl_expect "Signature is invalid" "401" \
         -H 'content-type: application/json' \
         -H "webhook-request-timestamp: $ts1" \
         -H "webhook-signature: invalidsignature" \
         -d "$data1"; then
-        echo "Failed test: signature is invalid"
         failure=true
     fi
 
-    if ! curl_expect "401" \
+    if ! curl_expect "Timestamp is invalid" "401" \
         -H 'content-type: application/json' \
         -H "webhook-request-timestamp: notatimestamp" \
         -H "webhook-signature: $sig1" \
         -d "$data1"; then
-        echo "Failed test: timestamp is invalid"
         failure=true
     fi
+
+    echo ""
 
     if $failure; then
         docker logs "$appname"
@@ -111,18 +105,36 @@ test_app() {
 }
 
 curl_expect() {
-    local expected_status=$1
+    local test_description=$1
+    local expected_status=$2
     shift
-    curl --silent -o /dev/null --write-out "%{http_code}" \
-        "http://localhost:$PORT/" "$@" >res
-    r=$(cat res)
-    rm res
-    if [ "$r" == "$expected_status" ]; then
+    shift
+    res=$(curl --silent -o /dev/null --write-out "%{http_code}" \
+        "http://localhost:$PORT/" "$@")
+    if [ "$res" == "$expected_status" ]; then
+        echo_err_green "  Passed: $test_description"
         return 0
     else
-        echo "Expected status $expected_status but got $r"
+        echo_err_red "  Failed: $test_description"
+        echo_err_red "    Expected status $expected_status but got $res"
         return 1
     fi
+}
+
+echo_err_red() {
+    (
+        tput setaf 01
+        echo "$@"
+        tput sgr0
+    ) 1>&2
+}
+
+echo_err_green() {
+    (
+        tput setaf 02
+        echo "$@"
+        tput sgr0
+    ) 1>&2
 }
 
 main "$@"
