@@ -6,11 +6,12 @@ export MAX_REQUEST_AGE_SECONDS=31536000 # One year
 
 main() {
     if [ "$1" == "" ]; then
-        test_app "express-webhook"
-        test_app "fastify-webhook"
-        test_app "spring-boot-webhook"
+        test_app "nodejs-express-webhook"
+        test_app "nodejs-fastify-webhook"
+        test_app "java-spring-boot-webhook"
         test_app "go-webhook"
         test_app "python-flask-webhook"
+        test_app "ruby-sinatra-webhook"
     else
         test_app "$1"
     fi
