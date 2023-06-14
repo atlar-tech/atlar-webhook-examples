@@ -1,11 +1,12 @@
 #!/bin/bash
+set -euo pipefail
 
 export WEBHOOK_B64KEY="agj+xWKk3gqkP+SsCsljkjbDth7bxguqVMRd4K3wm1I="
 export PORT=8000
 export MAX_REQUEST_AGE_SECONDS=31536000 # One year
 
 main() {
-    if [ "$1" == "" ]; then
+    if [ $# -eq 0 ]; then
         test_app "nodejs-express-webhook"
         test_app "nodejs-fastify-webhook"
         test_app "java-spring-boot-webhook"
