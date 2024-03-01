@@ -1,6 +1,6 @@
 plugins {
 	java
-	id("org.springframework.boot") version "3.0.5"
+	id("org.springframework.boot") version "3.2.3"
 	id("io.spring.dependency-management") version "1.1.0"
 	id("com.diffplug.spotless") version "6.18.0"
 }
