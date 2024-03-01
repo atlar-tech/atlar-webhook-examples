@@ -1,0 +1,26 @@
+name: go-webhook
+on:
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - 'test.sh'
+      - '.github/workflows/go-webhook.yaml'
+      - 'go-webhook/**'
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'test.sh'
+      - '.github/workflows/go-webhook.yaml'
+      - 'go-webhook/**'
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    env:
+      TERM: xterm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test
+        run: ./test.sh go-webhook

@@ -3,16 +3,16 @@ set -euo pipefail
 
 export WEBHOOK_B64KEY="agj+xWKk3gqkP+SsCsljkjbDth7bxguqVMRd4K3wm1I="
 export PORT=8000
-export MAX_REQUEST_AGE_SECONDS=31536000 # One year
+export MAX_REQUEST_AGE_SECONDS=315360000 # 10 years
 
 main() {
     if [ $# -eq 0 ]; then
+        test_app "go-webhook"
         test_app "nodejs-express-webhook"
         test_app "nodejs-fastify-webhook"
-        test_app "java-spring-boot-webhook"
-        test_app "go-webhook"
         test_app "python-flask-webhook"
         test_app "ruby-sinatra-webhook"
+        test_app "java-spring-boot-webhook"
     else
         test_app "$1"
     fi
@@ -103,6 +103,9 @@ test_app() {
         docker logs "$appname"
     fi
     docker rm --force "$appname" &>/dev/null
+    if $failure; then
+        exit 1
+    fi
 }
 
 curl_expect() {
