@@ -11,6 +11,6 @@
   "license": "ISC",
   "dependencies": {
     "fastify": "^4.15.0",
-    "fastify-raw-body": "^4.2.0"
+    "fastify-raw-body": "^5.0.0"
   }
 }
