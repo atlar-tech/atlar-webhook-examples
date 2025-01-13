@@ -15,7 +15,7 @@ repositories {
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("commons-codec:commons-codec:1.17.1")
+    implementation("commons-codec:commons-codec:1.17.2")
 }
 
 spotless {
